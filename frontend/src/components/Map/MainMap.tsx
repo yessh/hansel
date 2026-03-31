@@ -7,6 +7,7 @@ import { useGeolocation } from '@/hooks/useGeolocation';
 import type { Post } from '@/types/post';
 import { BREADCRUMB_MARKER_HTML, CURRENT_LOCATION_MARKER_HTML } from './BreadcrumbMarker';
 import PostDrawer from '@/components/PostDrawer';
+import PostCreateDrawer from '@/components/PostCreateDrawer';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8080';
 
@@ -29,6 +30,8 @@ export default function MainMap() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [hasCentered, setHasCentered] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // 최초 위치 확인 시 지도 중심 이동 (panTo + zoom)
   useEffect(() => {
@@ -48,6 +51,23 @@ export default function MainMap() {
       .then(setPosts)
       .catch(() => { /* 개발 중 API 미연결 시 무시 */ });
   }, [latitude, longitude]);
+
+  async function handleCreatePost(author: string, content: string) {
+    if (!latitude || !longitude) return;
+    setSubmitting(true);
+    try {
+      await fetch(`${API_BASE}/api/posts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ author, content, latitude, longitude }),
+      });
+      setIsCreateOpen(false);
+      const res = await fetch(`${API_BASE}/api/posts/nearby?latitude=${latitude}&longitude=${longitude}`);
+      setPosts(await res.json());
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -134,8 +154,25 @@ export default function MainMap() {
         </div>
       </div>
 
+      {/* 글쓰기 FAB 버튼 */}
+      <button
+        onClick={() => setIsCreateOpen(true)}
+        className="absolute bottom-8 right-5 z-10 w-14 h-14 rounded-full bg-amber-500 shadow-lg flex items-center justify-center hover:bg-amber-600 active:bg-amber-700 transition-colors"
+        aria-label="게시글 작성"
+      >
+        <span className="text-white text-2xl font-light leading-none">+</span>
+      </button>
+
       {/* 게시글 하단 드로어 */}
       <PostDrawer post={selectedPost} onClose={() => setSelectedPost(null)} />
+
+      {/* 게시글 작성 드로어 */}
+      <PostCreateDrawer
+        open={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        onSubmit={handleCreatePost}
+        submitting={submitting}
+      />
     </div>
   );
 }
