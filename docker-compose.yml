@@ -1,0 +1,20 @@
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    container_name: hansel_db
+    environment:
+      POSTGRES_DB: hansel_db
+      POSTGRES_USER: hansel
+      POSTGRES_PASSWORD: hansel
+    ports:
+      - "5432:5432"
+    volumes:
+      - hansel_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hansel -d hansel_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  hansel_pgdata:
