@@ -11,14 +11,13 @@
   "dependencies": {
     "framer-motion": "^11.18.2",
     "lucide-react": "^0.468.0",
-    "mapbox-gl": "^2.15.0",
     "next": "14.2.29",
     "react": "^18",
     "react-dom": "^18",
-    "react-map-gl": "^7.1.7"
+    "react-naver-maps": "^0.1.5"
   },
   "devDependencies": {
-    "@types/mapbox-gl": "^2.7.21",
+    "@types/navermaps": "^3.9.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

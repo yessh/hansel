@@ -18,3 +18,24 @@ body {
   color: var(--foreground);
   background: var(--background);
 }
+
+/* 네이버 지도 마커 내부 애니메이션 — Tailwind purge를 우회하기 위해 전역 CSS에 정의 */
+@keyframes hansel-ping {
+  75%, 100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.hansel-ping {
+  animation: hansel-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* 빵 부스러기 마커 호버 */
+.hansel-breadcrumb {
+  transition: transform 0.2s ease;
+}
+
+.hansel-breadcrumb:hover {
+  transform: scale(1.25);
+}
