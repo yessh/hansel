@@ -76,4 +76,14 @@ public class PostService {
                 .map(PostResponse::from)
                 .toList();
     }
+
+    @Transactional
+    public void delete(Long postId, Long userId) {
+        Post post = postRepository.findById(postId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (!post.getUser().getId().equals(userId)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+        postRepository.delete(post);
+    }
 }

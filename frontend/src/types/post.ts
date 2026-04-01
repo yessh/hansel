@@ -7,3 +7,15 @@ export interface Post {
   latitude: number;
   longitude: number;
 }
+
+export interface Comment {
+  id: number;
+  author: string;
+  content: string;
+  createdAt: string;
+}
+
+export interface LikeStatus {
+  count: number;
+  liked: boolean;
+}

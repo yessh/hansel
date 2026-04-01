@@ -103,4 +103,17 @@ public class PostController {
     ) {
         return ResponseEntity.ok(postService.findMyPosts(userId));
     }
+
+    /**
+     * DELETE /api/posts/{id}
+     * 게시글 삭제 — 본인 글만 가능 (인증 필요)
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id,
+            @AuthenticationPrincipal Long userId
+    ) {
+        postService.delete(id, userId);
+        return ResponseEntity.noContent().build();
+    }
 }
