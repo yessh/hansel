@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import org.locationtech.jts.geom.Point;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import com.hansel.domain.User;
 
 import java.time.LocalDateTime;
 
@@ -41,11 +42,16 @@ public class Post {
     @Column(nullable = false, columnDefinition = "geometry(Point, 4326)")
     private Point location;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
+
     @Builder
-    public Post(String content, String author, String imageUrl, Point location) {
+    public Post(String content, String author, String imageUrl, Point location, User user) {
         this.content = content;
         this.author = author;
         this.imageUrl = imageUrl;
         this.location = location;
+        this.user = user;
     }
 }

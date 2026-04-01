@@ -6,6 +6,7 @@ backend/.idea/
 backend/*.iml
 backend/local.properties
 backend/.env
+backend/src/main/resources/application-local.yml
 
 # ===== Frontend (Next.js / Node) =====
 frontend/.next/

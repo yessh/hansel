@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { NaverMap, Marker, Circle, Container, useNavermaps } from 'react-naver-maps';
+import { AnimatePresence, motion } from 'framer-motion';
+import { BookOpen, PenLine } from 'lucide-react';
 
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +32,8 @@ export default function MainMap() {
   const { latitude, longitude, loading, error } = useGeolocation();
   const { isLoggedIn } = useAuth();
 
+  const router = useRouter();
+
   const [posts, setPosts] = useState<Post[]>([]);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [hasCentered, setHasCentered] = useState(false);
@@ -36,6 +41,7 @@ export default function MainMap() {
   const [submitting, setSubmitting] = useState(false);
   const [loginSheetOpen, setLoginSheetOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<'view' | 'create'>('view');
+  const [fabOpen, setFabOpen] = useState(false);
 
   // 최초 위치 확인 시 지도 중심 이동
   useEffect(() => {
@@ -78,14 +84,29 @@ export default function MainMap() {
     }
   }
 
-  function handleFabClick() {
-    // localStorage에서 토큰 확인 (최신 상태)
+  function handleFabToggle() {
+    setFabOpen((prev) => !prev);
+  }
+
+  function handleCreateClick() {
+    setFabOpen(false);
     const hasToken = localStorage.getItem('hansel_access_token');
     if (!hasToken) {
       setPendingAction('create');
       setLoginSheetOpen(true);
     } else {
       setIsCreateOpen(true);
+    }
+  }
+
+  function handleMyPostsClick() {
+    setFabOpen(false);
+    const hasToken = localStorage.getItem('hansel_access_token');
+    if (!hasToken) {
+      setPendingAction('view');
+      setLoginSheetOpen(true);
+    } else {
+      router.push('/my-posts');
     }
   }
 
@@ -201,14 +222,53 @@ export default function MainMap() {
         </div>
       </div>
 
-      {/* 글쓰기 FAB 버튼 */}
-      <button
-        onClick={handleFabClick}
-        className="absolute bottom-8 right-5 z-10 w-14 h-14 rounded-full bg-amber-500 shadow-lg flex items-center justify-center hover:bg-amber-600 active:bg-amber-700 transition-colors"
-        aria-label="게시글 작성"
-      >
-        <span className="text-white text-2xl font-light leading-none">+</span>
-      </button>
+      {/* FAB 메뉴 영역 */}
+      <div className="absolute bottom-8 right-5 z-10 flex flex-col items-end gap-3">
+        <AnimatePresence>
+          {fabOpen && (
+            <>
+              {/* 내가 쓴 글 */}
+              <motion.button
+                key="my-posts"
+                initial={{ opacity: 0, y: 12, scale: 0.85 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.85 }}
+                transition={{ duration: 0.18, delay: 0.06 }}
+                onClick={handleMyPostsClick}
+                className="flex items-center gap-2 bg-white rounded-full px-4 py-2.5 shadow-lg text-sm font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              >
+                <BookOpen className="w-4 h-4 text-indigo-500" />
+                내가 쓴 글
+              </motion.button>
+
+              {/* 글 쓰기 */}
+              <motion.button
+                key="create"
+                initial={{ opacity: 0, y: 12, scale: 0.85 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 12, scale: 0.85 }}
+                transition={{ duration: 0.18 }}
+                onClick={handleCreateClick}
+                className="flex items-center gap-2 bg-white rounded-full px-4 py-2.5 shadow-lg text-sm font-medium text-gray-700 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              >
+                <PenLine className="w-4 h-4 text-amber-500" />
+                글 쓰기
+              </motion.button>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* 메인 FAB (+/×) */}
+        <motion.button
+          onClick={handleFabToggle}
+          animate={{ rotate: fabOpen ? 45 : 0 }}
+          transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+          className="w-14 h-14 rounded-full bg-amber-500 shadow-lg flex items-center justify-center hover:bg-amber-600 active:bg-amber-700 transition-colors"
+          aria-label={fabOpen ? '메뉴 닫기' : '메뉴 열기'}
+        >
+          <span className="text-white text-2xl font-light leading-none">+</span>
+        </motion.button>
+      </div>
 
       {/* 게시글 하단 드로어 */}
       <PostDrawer post={selectedPost} onClose={() => setSelectedPost(null)} />

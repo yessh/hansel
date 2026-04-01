@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,7 +18,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
-@CrossOrigin(origins = "*")
 @RequiredArgsConstructor
 @Validated
 public class PostController {
@@ -26,17 +26,19 @@ public class PostController {
 
     /**
      * POST /api/posts
-     * 게시글 작성 (위치 정보 포함)
+     * 게시글 작성 (인증 필요)
      */
     @PostMapping
-    public ResponseEntity<PostResponse> create(@Valid @RequestBody PostCreateRequest request) {
-        PostResponse response = postService.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<PostResponse> create(
+            @Valid @RequestBody PostCreateRequest request,
+            @AuthenticationPrincipal Long userId
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(postService.create(request, userId));
     }
 
     /**
      * GET /api/posts/nearby?latitude={lat}&longitude={lon}
-     * 현재 위치 반경 100m 이내 게시글 최신순 조회
+     * 현재 위치 반경 100m 이내 게시글 최신순 조회 (공개)
      */
     @GetMapping("/nearby")
     public ResponseEntity<List<PostResponse>> findNearby(
@@ -50,7 +52,26 @@ public class PostController {
             @DecimalMax(value = "180.0", message = "경도는 180 이하이어야 합니다.")
             Double longitude
     ) {
-        List<PostResponse> posts = postService.findNearby(latitude, longitude);
-        return ResponseEntity.ok(posts);
+        return ResponseEntity.ok(postService.findNearby(latitude, longitude));
+    }
+
+    /**
+     * GET /api/posts/{id}
+     * 게시글 상세 조회 (인증 필요)
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<PostResponse> findById(@PathVariable Long id) {
+        return ResponseEntity.ok(postService.findById(id));
+    }
+
+    /**
+     * GET /api/posts/my
+     * 내가 작성한 게시글 목록 최신순 조회 (인증 필요)
+     */
+    @GetMapping("/my")
+    public ResponseEntity<List<PostResponse>> findMyPosts(
+            @AuthenticationPrincipal Long userId
+    ) {
+        return ResponseEntity.ok(postService.findMyPosts(userId));
     }
 }

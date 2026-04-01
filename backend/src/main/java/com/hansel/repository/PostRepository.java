@@ -33,4 +33,6 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("latitude") double latitude,
             @Param("longitude") double longitude
     );
+
+    List<Post> findByUserIdOrderByCreatedAtDesc(Long userId);
 }
