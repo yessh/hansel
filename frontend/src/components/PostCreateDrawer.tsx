@@ -3,17 +3,18 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, PenLine } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface Props {
   open: boolean;
   onClose: () => void;
-  onSubmit: (author: string, content: string) => Promise<void>;
+  onSubmit: (content: string) => Promise<void>;
   submitting: boolean;
 }
 
 export default function PostCreateDrawer({ open, onClose, onSubmit, submitting }: Props) {
-  const [author, setAuthor] = useState('');
   const [content, setContent] = useState('');
+  const { user } = useAuth();
 
   // Escape 키로 닫기
   useEffect(() => {
@@ -27,15 +28,14 @@ export default function PostCreateDrawer({ open, onClose, onSubmit, submitting }
   // 드로어 닫힐 때 입력값 초기화
   useEffect(() => {
     if (!open) {
-      setAuthor('');
       setContent('');
     }
   }, [open]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!author.trim() || !content.trim()) return;
-    await onSubmit(author.trim(), content.trim());
+    if (!content.trim()) return;
+    await onSubmit(content.trim());
   }
 
   return (
@@ -94,23 +94,17 @@ export default function PostCreateDrawer({ open, onClose, onSubmit, submitting }
                 </button>
               </div>
 
-              {/* 작성자 입력 */}
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-gray-500" htmlFor="author">
-                  이름
-                </label>
-                <input
-                  id="author"
-                  type="text"
-                  value={author}
-                  onChange={(e) => setAuthor(e.target.value)}
-                  placeholder="이름을 입력하세요"
-                  maxLength={20}
-                  required
-                  disabled={submitting}
-                  className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent disabled:opacity-50"
-                />
-              </div>
+              {/* 작성자 표시 */}
+              {user && (
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-semibold text-amber-700">
+                      {user.nickname.charAt(0)}
+                    </span>
+                  </div>
+                  <span className="text-sm text-gray-600">{user.nickname}</span>
+                </div>
+              )}
 
               {/* 내용 입력 */}
               <div className="flex flex-col gap-1.5">
@@ -134,7 +128,7 @@ export default function PostCreateDrawer({ open, onClose, onSubmit, submitting }
               {/* 제출 버튼 */}
               <button
                 type="submit"
-                disabled={submitting || !author.trim() || !content.trim()}
+                disabled={submitting || !content.trim()}
                 className="w-full py-3 rounded-xl bg-amber-500 text-white text-sm font-semibold hover:bg-amber-600 active:bg-amber-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {submitting && (
