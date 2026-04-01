@@ -26,6 +26,16 @@ const CURRENT_LOCATION_ICON: naver.maps.HtmlIcon = {
   anchor: { x: 16, y: 16 } as naver.maps.Point,
 };
 
+function getDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371000;
+  const rad1 = lat1 * Math.PI / 180;
+  const rad2 = lat2 * Math.PI / 180;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad1) * Math.cos(rad2) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 export default function MainMap() {
   const navermaps = useNavermaps();
   const mapRef = useRef<naver.maps.Map | null>(null);
@@ -42,25 +52,34 @@ export default function MainMap() {
   const [loginSheetOpen, setLoginSheetOpen] = useState(false);
   const [pendingAction, setPendingAction] = useState<'view' | 'create'>('view');
   const [fabOpen, setFabOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // 최초 위치 확인 시 지도 중심 이동
+  function showToast(message: string) {
+    setToastMessage(message);
+    setTimeout(() => setToastMessage(null), 3000);
+  }
+
+  function fetchPostsInBounds() {
+    if (!mapRef.current) return;
+    const bounds = mapRef.current.getBounds() as naver.maps.LatLngBounds;
+    const sw = bounds.getSW();
+    const ne = bounds.getNE();
+    fetch(`${API_BASE}/api/posts/in-bounds?swLat=${sw.lat()}&swLng=${sw.lng()}&neLat=${ne.lat()}&neLng=${ne.lng()}`)
+      .then((res) => res.json())
+      .then(setPosts)
+      .catch(() => {});
+  }
+
+  // 최초 위치 확인 시 지도 중심 이동 + idle 리스너 등록
   useEffect(() => {
     if (latitude && longitude && !hasCentered && mapRef.current) {
       mapRef.current.panTo(new navermaps.LatLng(latitude, longitude));
       mapRef.current.setZoom(17, true);
       setHasCentered(true);
+      mapRef.current.addListener('idle', fetchPostsInBounds);
+      fetchPostsInBounds();
     }
   }, [latitude, longitude, hasCentered, navermaps]);
-
-  // 위치가 바뀔 때마다 주변 게시글 재조회
-  useEffect(() => {
-    if (!latitude || !longitude) return;
-
-    fetch(`${API_BASE}/api/posts/nearby?latitude=${latitude}&longitude=${longitude}`)
-      .then((res) => res.json())
-      .then(setPosts)
-      .catch(() => {});
-  }, [latitude, longitude]);
 
   // 로그인 후 ?action=create 쿼리 처리
   useEffect(() => {
@@ -74,7 +93,12 @@ export default function MainMap() {
   }, [isLoggedIn]);
 
   function handleMarkerClick(post: Post) {
-    // localStorage에서 토큰 확인 (최신 상태)
+    if (latitude === null || longitude === null) return;
+    const dist = getDistanceMeters(latitude, longitude, post.latitude, post.longitude);
+    if (dist > 50) {
+      showToast('이 빵 부스러기를 읽으려면 50m 이내에 있어야 합니다.');
+      return;
+    }
     const hasToken = localStorage.getItem('hansel_access_token');
     if (!hasToken) {
       setPendingAction('view');
@@ -136,8 +160,7 @@ export default function MainMap() {
       }
 
       setIsCreateOpen(false);
-      const postsRes = await fetch(`${API_BASE}/api/posts/nearby?latitude=${latitude}&longitude=${longitude}`);
-      setPosts(await postsRes.json());
+      fetchPostsInBounds();
     } catch (error) {
       console.error('글 작성 실패:', error);
     } finally {
@@ -183,7 +206,7 @@ export default function MainMap() {
           {latitude && longitude && (
             <Circle
               center={{ lat: latitude, lng: longitude }}
-              radius={100}
+              radius={50}
               fillColor="#6366F1"
               fillOpacity={0.08}
               strokeColor="#6366F1"
@@ -216,11 +239,29 @@ export default function MainMap() {
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 pointer-events-none">
         <div className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
           <span className="text-sm font-medium text-gray-600">
-            반경 <span className="text-indigo-600 font-semibold">100m</span> 이내 빵 부스러기{' '}
+            지도 내 빵 부스러기{' '}
             <span className="text-indigo-600 font-semibold">{posts.length}</span>개
           </span>
         </div>
       </div>
+
+      {/* 거리 제한 토스트 */}
+      <AnimatePresence>
+        {toastMessage && (
+          <motion.div
+            key="toast"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none"
+          >
+            <div className="bg-gray-800/90 text-white text-xs font-medium px-4 py-2.5 rounded-full shadow-lg whitespace-nowrap">
+              {toastMessage}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* FAB 메뉴 영역 */}
       <div className="absolute bottom-8 right-5 z-10 flex flex-col items-end gap-3">

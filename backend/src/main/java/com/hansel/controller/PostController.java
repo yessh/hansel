@@ -56,6 +56,35 @@ public class PostController {
     }
 
     /**
+     * GET /api/posts/in-bounds?swLat=&swLng=&neLat=&neLng=
+     * 현재 지도 뷰포트 내 게시글 최신순 조회 (공개)
+     */
+    @GetMapping("/in-bounds")
+    public ResponseEntity<List<PostResponse>> findInBounds(
+            @RequestParam @NotNull
+            @DecimalMin(value = "-90.0", message = "위도는 -90 이상이어야 합니다.")
+            @DecimalMax(value = "90.0", message = "위도는 90 이하이어야 합니다.")
+            Double swLat,
+
+            @RequestParam @NotNull
+            @DecimalMin(value = "-180.0", message = "경도는 -180 이상이어야 합니다.")
+            @DecimalMax(value = "180.0", message = "경도는 180 이하이어야 합니다.")
+            Double swLng,
+
+            @RequestParam @NotNull
+            @DecimalMin(value = "-90.0", message = "위도는 -90 이상이어야 합니다.")
+            @DecimalMax(value = "90.0", message = "위도는 90 이하이어야 합니다.")
+            Double neLat,
+
+            @RequestParam @NotNull
+            @DecimalMin(value = "-180.0", message = "경도는 -180 이상이어야 합니다.")
+            @DecimalMax(value = "180.0", message = "경도는 180 이하이어야 합니다.")
+            Double neLng
+    ) {
+        return ResponseEntity.ok(postService.findInBounds(swLat, swLng, neLat, neLng));
+    }
+
+    /**
      * GET /api/posts/{id}
      * 게시글 상세 조회 (인증 필요)
      */

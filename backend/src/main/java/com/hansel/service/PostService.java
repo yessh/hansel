@@ -63,6 +63,13 @@ public class PostService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
     }
 
+    public List<PostResponse> findInBounds(double swLat, double swLng, double neLat, double neLng) {
+        return postRepository.findInBounds(swLat, swLng, neLat, neLng)
+                .stream()
+                .map(PostResponse::from)
+                .toList();
+    }
+
     public List<PostResponse> findMyPosts(Long userId) {
         return postRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()

@@ -34,5 +34,21 @@ public interface PostRepository extends JpaRepository<Post, Long> {
             @Param("longitude") double longitude
     );
 
+    @Query(value = """
+            SELECT *
+            FROM post
+            WHERE ST_Within(
+                location,
+                ST_MakeEnvelope(:swLng, :swLat, :neLng, :neLat, 4326)
+            )
+            ORDER BY created_at DESC
+            """, nativeQuery = true)
+    List<Post> findInBounds(
+            @Param("swLat") double swLat,
+            @Param("swLng") double swLng,
+            @Param("neLat") double neLat,
+            @Param("neLng") double neLng
+    );
+
     List<Post> findByUserIdOrderByCreatedAtDesc(Long userId);
 }

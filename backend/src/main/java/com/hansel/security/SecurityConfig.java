@@ -35,7 +35,8 @@ public class SecurityConfig {
         return web -> web.ignoring()
                 .requestMatchers(new AntPathRequestMatcher("/api/auth/**"))
                 .requestMatchers(new AntPathRequestMatcher("/api/health"))
-                .requestMatchers(new AntPathRequestMatcher("/api/posts/nearby"));
+                .requestMatchers(new AntPathRequestMatcher("/api/posts/nearby"))
+                .requestMatchers(new AntPathRequestMatcher("/api/posts/in-bounds"));
     }
 
     @Bean
