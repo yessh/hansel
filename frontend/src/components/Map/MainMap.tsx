@@ -9,7 +9,7 @@ import { BookOpen, PenLine } from 'lucide-react';
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Post } from '@/types/post';
-import { BREADCRUMB_MARKER_HTML, CURRENT_LOCATION_MARKER_HTML } from './BreadcrumbMarker';
+import { BREADCRUMB_MARKER_HTML, OWN_POST_MARKER_HTML, READ_POST_MARKER_HTML, CURRENT_LOCATION_MARKER_HTML } from './BreadcrumbMarker';
 import PostDrawer from '@/components/PostDrawer';
 import PostCreateDrawer from '@/components/PostCreateDrawer';
 import LoginBottomSheet from '@/components/LoginBottomSheet';
@@ -18,6 +18,16 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? 'http://localhost:8080';
 
 const BREADCRUMB_ICON: naver.maps.HtmlIcon = {
   content: BREADCRUMB_MARKER_HTML,
+  anchor: { x: 16, y: 28 } as naver.maps.Point,
+};
+
+const OWN_POST_ICON: naver.maps.HtmlIcon = {
+  content: OWN_POST_MARKER_HTML,
+  anchor: { x: 16, y: 28 } as naver.maps.Point,
+};
+
+const READ_POST_ICON: naver.maps.HtmlIcon = {
+  content: READ_POST_MARKER_HTML,
   anchor: { x: 16, y: 28 } as naver.maps.Point,
 };
 
@@ -40,7 +50,7 @@ export default function MainMap() {
   const navermaps = useNavermaps();
   const mapRef = useRef<naver.maps.Map | null>(null);
   const { latitude, longitude, loading, error } = useGeolocation();
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
 
   const router = useRouter();
 
@@ -53,6 +63,21 @@ export default function MainMap() {
   const [pendingAction, setPendingAction] = useState<'view' | 'create'>('view');
   const [fabOpen, setFabOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [readPostIds, setReadPostIds] = useState<Set<number>>(() => {
+    try {
+      const stored = localStorage.getItem('hansel_read_posts');
+      return stored ? new Set<number>(JSON.parse(stored)) : new Set<number>();
+    } catch { return new Set<number>(); }
+  });
+
+  function markAsRead(postId: number) {
+    setReadPostIds((prev) => {
+      const next = new Set(prev);
+      next.add(postId);
+      localStorage.setItem('hansel_read_posts', JSON.stringify([...next]));
+      return next;
+    });
+  }
 
   function showToast(message: string) {
     setToastMessage(message);
@@ -94,16 +119,24 @@ export default function MainMap() {
 
   function handleMarkerClick(post: Post) {
     if (latitude === null || longitude === null) return;
-    const dist = getDistanceMeters(latitude, longitude, post.latitude, post.longitude);
-    if (dist > 50) {
-      showToast('이 빵 부스러기를 읽으려면 50m 이내에 있어야 합니다.');
-      return;
+
+    const isOwn = user?.id === post.userId;
+    const isRead = readPostIds.has(post.id);
+
+    if (!isOwn && !isRead) {
+      const dist = getDistanceMeters(latitude, longitude, post.latitude, post.longitude);
+      if (dist > 50) {
+        showToast('이 빵 부스러기를 읽으려면 50m 이내에 있어야 합니다.');
+        return;
+      }
     }
+
     const hasToken = localStorage.getItem('hansel_access_token');
     if (!hasToken) {
       setPendingAction('view');
       setLoginSheetOpen(true);
     } else {
+      markAsRead(post.id);
       setSelectedPost(post);
     }
   }
@@ -224,14 +257,19 @@ export default function MainMap() {
             />
           )}
 
-          {posts.map((post) => (
-            <Marker
-              key={post.id}
-              position={{ lat: post.latitude, lng: post.longitude }}
-              icon={BREADCRUMB_ICON}
-              onClick={() => handleMarkerClick(post)}
-            />
-          ))}
+          {posts.map((post) => {
+            const isOwn = user?.id === post.userId;
+            const isRead = readPostIds.has(post.id);
+            const icon = isOwn ? OWN_POST_ICON : isRead ? READ_POST_ICON : BREADCRUMB_ICON;
+            return (
+              <Marker
+                key={post.id}
+                position={{ lat: post.latitude, lng: post.longitude }}
+                icon={icon}
+                onClick={() => handleMarkerClick(post)}
+              />
+            );
+          })}
         </NaverMap>
       </Container>
 

@@ -6,6 +6,7 @@ import java.time.LocalDateTime;
 
 public record PostResponse(
         Long id,
+        Long userId,
         String content,
         String author,
         String imageUrl,
@@ -16,6 +17,7 @@ public record PostResponse(
     public static PostResponse from(Post post) {
         return new PostResponse(
                 post.getId(),
+                post.getUserId(),
                 post.getContent(),
                 post.getAuthor(),
                 post.getImageUrl(),

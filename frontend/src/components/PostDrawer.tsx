@@ -256,7 +256,7 @@ export default function PostDrawer({ post, onClose }: Props) {
                 }}
                 placeholder="댓글 달기..."
                 maxLength={200}
-                className="flex-1 text-sm bg-gray-100 rounded-full px-4 py-2 outline-none placeholder:text-gray-400"
+                className="flex-1 text-sm text-gray-900 bg-gray-100 rounded-full px-4 py-2 outline-none placeholder:text-gray-400"
               />
               <button
                 onClick={handleCommentSubmit}

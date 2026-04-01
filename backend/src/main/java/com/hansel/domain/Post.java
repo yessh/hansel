@@ -42,6 +42,9 @@ public class Post {
     @Column(nullable = false, columnDefinition = "geometry(Point, 4326)")
     private Point location;
 
+    @Column(name = "user_id", insertable = false, updatable = false)
+    private Long userId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
